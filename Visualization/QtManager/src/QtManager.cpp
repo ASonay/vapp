@@ -181,7 +181,7 @@ void QtManager::onClick(std::string func) {
         bool b_speed;
         double speed = m_inputFields["Speed"]->text().toDouble(&b_speed);
 
-        if (!b_speed) {speed=0.05;}
+        if (!b_speed) {speed=0.001;}
         
         while (m_play) {
             m_sphere_cloud = m_algoBase.sphereMove(
