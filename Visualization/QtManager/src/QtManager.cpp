@@ -4,7 +4,7 @@
 
 QtManager::QtManager(QWidget *parent) :
     QMainWindow(parent),
-    m_sphere_volume(0.002),
+    m_sphere_volume(0.01),
     b_part1(true),
     b_part2(false),
     b_part3(false),
@@ -32,7 +32,7 @@ void QtManager::setWindow()
     }
 
     // Create input fields
-    for (auto & item : {"Eta", "Phi", "X", "Y", "Z", "Speed"}){
+    for (auto & item : {"Eta", "Phi", "X", "Y", "Z", "Speed","Gran"}){
         m_inputFields[item] = std::make_unique<QLineEdit>();
         m_inputFields[item]->setPlaceholderText(item);
         hLayout_2->addWidget(m_inputFields[item].get());
@@ -181,13 +181,17 @@ void QtManager::onClick(std::string func) {
         bool b_speed;
         double speed = m_inputFields["Speed"]->text().toDouble(&b_speed);
 
+        bool b_gran;
+        double gran = m_inputFields["Gran"]->text().toDouble(&b_gran);
+
         if (!b_speed) {speed=0.001;}
+        if (!b_gran) {gran=m_sphere_volume;}
         
         while (m_play) {
             m_sphere_cloud = m_algoBase.sphereMove(
                 m_config->getCloud(),
                 m_sphere_cloud,
-                m_sphere_volume,
+                gran,
                 speed
             );
             updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
