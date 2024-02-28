@@ -8,9 +8,16 @@
 #include <unordered_map>
 
 namespace dm {
+
+    struct point_d {
+        double x, y, z;
+        unsigned char R, G, B;
+        float vx=0, vy=0, vz=0;
+    };
+
     struct point {
         float x, y, z;
-        uint8_t R, G, B;
+        unsigned char R, G, B;
         float vx=0, vy=0, vz=0;
     };
 
@@ -24,7 +31,11 @@ public:
     Cloud(const std::string name);
     ~Cloud();
     
-    bool readFile(const std::string &fileName);
+    bool readFile(
+        const std::string &fileName, 
+        unsigned int = 3 * sizeof(float) + 3 * sizeof(unsigned char),
+        std::string cord_type = "float"
+    );
 
     dm::cloud *getCloud() {return m_cloud.get();}
 

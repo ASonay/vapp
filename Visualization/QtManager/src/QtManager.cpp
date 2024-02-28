@@ -32,7 +32,7 @@ void QtManager::setWindow()
     }
 
     // Create input fields
-    for (auto & item : {"Eta", "Phi", "X", "Y", "Z", "Speed","Gran"}){
+    for (auto & item : {"Eta", "Beta", "Phi", "X", "Y", "Z", "Speed","Gran"}){
         m_inputFields[item] = std::make_unique<QLineEdit>();
         m_inputFields[item]->setPlaceholderText(item);
         hLayout_2->addWidget(m_inputFields[item].get());
@@ -123,15 +123,18 @@ void QtManager::setCamera(const QVector3D &pos, const QVector3D &cent) {
 void QtManager::onClick(std::string func) {
 
     if (func == "Rotate" && b_part1) {
-        bool b_eta, b_phi;
+        bool b_eta, b_beta, b_phi;
         double eta = m_inputFields["Eta"]->text().toDouble(&b_eta);
+        double beta = m_inputFields["Beta"]->text().toDouble(&b_beta);
         double phi = m_inputFields["Phi"]->text().toDouble(&b_phi);
 
         if (!b_eta) {eta=0.0;}
+        if (!b_beta) {beta=0.0;}
         if (!b_phi) {phi=0.0;}
 
-        if (b_eta || b_phi) {
+        if (b_eta || b_phi || b_beta) {
             m_algoBase.setEta(eta);
+            m_algoBase.setBeta(beta);
             m_algoBase.setPhi(phi);
             updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.rotation(p); });
         }
@@ -222,6 +225,27 @@ void QtManager::onClick(std::string func) {
         b_part1 = false;
         b_part3 = false;
      }
+     else if (func == "Part 3") {
+        if (
+                !m_config->readFile(
+                    m_config->getLibDir()+"/Data/kitchen/tsdf_mesh.ply",
+                    4 * sizeof(double) + 4 * sizeof(unsigned char),
+                    "double"
+                )
+            )
+        {
+            std::cerr << "Can not read the file" << std::endl;
+        }
+        else {
+            std::cerr << "Successfully read file" << std::endl;
+        }
+        m_cloudEntity.reset(createPointCloud());
+        updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
+        setCamera(QVector3D(0, 0, -10.0), QVector3D(0, 0, 0));
+        b_part1 = true;
+        b_part2 = false;
+        b_part3 = false;
+     }
      else {
         std::cerr << "Do nothing!" << std::endl;
      }
@@ -280,9 +304,9 @@ void QtManager::updateArray(unsigned start, unsigned end, algo a) {
         m_rawVertexArray[6*i+1] = m_config->getCloud()->at(i).y;
         m_rawVertexArray[6*i+2] = m_config->getCloud()->at(i).z;
         // Color (RGB normalized to 0-1 range)
-        m_rawVertexArray[6*i+3] = m_config->getCloud()->at(i).R / 255.;
-        m_rawVertexArray[6*i+4] = m_config->getCloud()->at(i).G / 255.;
-        m_rawVertexArray[6*i+5] = m_config->getCloud()->at(i).B / 255.;
+        m_rawVertexArray[6*i+3] = static_cast<float>(m_config->getCloud()->at(i).R) / 255.;
+        m_rawVertexArray[6*i+4] = static_cast<float>(m_config->getCloud()->at(i).G) / 255.;
+        m_rawVertexArray[6*i+5] = static_cast<float>(m_config->getCloud()->at(i).B) / 255.;
     }
 }
 

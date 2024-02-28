@@ -33,7 +33,9 @@ namespace fun {
         void setX(float x) {m_x = x;}
         void setY(float y) {m_y = y;}
         void setZ(float z) {m_z = z;}
+        
         void setEta(float eta) {m_eta = eta;}
+        void setBeta(float beta) {m_beta = beta;}
         void setPhi(float phi) {m_phi = phi;}
 
     private:
@@ -41,6 +43,7 @@ namespace fun {
         float m_y;
         float m_z;
         float m_eta;
+        float m_beta;
         float m_phi;
     };
 }

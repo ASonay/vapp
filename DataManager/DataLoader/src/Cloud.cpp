@@ -16,7 +16,7 @@ Cloud::~Cloud()
 {
 }
 
-bool Cloud::readFile(const std::string &fileName)
+bool Cloud::readFile(const std::string &fileName, unsigned int size, std::string cord_type)
 {
     std::ifstream file(fileName, std::ios::binary);
     if (!file.is_open()) {
@@ -53,10 +53,25 @@ bool Cloud::readFile(const std::string &fileName)
     // Read vertex data
     m_cloud.reset(new dm::cloud(vertexCount));
     m_vertex = vertexCount;
-    dm::point p;
+
     for (size_t i = 0; i < vertexCount; ++i) {
-        file.read(reinterpret_cast<char*>(&p), sizeof(dm::point) - 3 * sizeof(float) - 1);
-        m_cloud->at(i) = p;
+        if (cord_type == "double") {
+            dm::point_d p;
+            file.read(reinterpret_cast<char*>(&p), size);
+            m_cloud->at(i) = {
+                .x = static_cast<float>(p.x),
+                .y = static_cast<float>(p.y),
+                .z = static_cast<float>(p.z),
+                .R = p.R,
+                .G = p.G,
+                .B = p.B,
+            };
+        }
+        else {
+            dm::point p;
+            file.read(reinterpret_cast<char*>(&p), size);
+            m_cloud->at(i) = p;
+        }
     }
 
     return true;

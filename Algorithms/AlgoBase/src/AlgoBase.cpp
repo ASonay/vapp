@@ -25,14 +25,24 @@ dm::point fun::AlgoBase::rotation(const dm::point &x){
 
     // Convert angles from degrees to radians
     float etaRad = m_eta * M_PI / 180.0;
+    float betaRad = m_beta * M_PI / 180.0;
     float phiRad = m_phi * M_PI / 180.0;
 
-    // Rotation around the Y-axis
-    p.x = x.x * cos(etaRad) + x.z * sin(etaRad);
-    p.z = -x.x * sin(etaRad) + x.z * cos(etaRad);
+    // Rotation around the x-axis
+    p.y = x.y * cos(etaRad) - x.z * sin(etaRad);
+    p.z = x.y * sin(etaRad) + x.z * cos(etaRad);
 
-    p.x = p.x * cos(phiRad) - x.y * sin(phiRad);
-    p.y = p.x * sin(phiRad) + x.y * cos(phiRad);
+    // Rotation around the Y-axis
+    float xRoty = x.x * cos(betaRad) + p.z * sin(betaRad);
+    float zRoty = -x.x * sin(betaRad) + p.z * cos(betaRad);
+    p.x = xRoty;
+    p.z = zRoty;
+
+    // Rotation around the Z-axis
+    float xRotz = p.x * cos(phiRad) - p.y * sin(phiRad);
+    float yRotz = p.x * sin(phiRad) + p.y * cos(phiRad);
+    p.x = xRotz;
+    p.y = yRotz;
 
     return p;
 }
