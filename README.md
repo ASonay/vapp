@@ -12,13 +12,7 @@ To run;
 vapp
 ```
 
-Screenshot:
-
-Ex. part-1  
-
-<img src="pics/vapp.png" width="50%" height="50%">
-
-Ex. part-2  
+Screenshot:  
 
 <img src="pics/vapp3.png" width="50%" height="50%">
 
