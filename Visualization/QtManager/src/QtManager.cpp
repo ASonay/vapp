@@ -215,7 +215,7 @@ void QtManager::onClick(std::string func) {
         b_part3 = false;
      }
      else if (func == "Part 2") {
-        m_config->createCloud(20000, m_sphere_volume, m_config->boundMin(), m_config->boundMax());
+        m_config->createCloud(50000, m_sphere_volume, m_config->boundMin(), m_config->boundMax());
         m_cloudEntity.reset(createPointCloud());
         updatePoints([this](const size_t& idx) -> void { return m_algoBase->base(idx); });
         setCamera(QVector3D(0, 0.0, m_config->boundMin() * 6.0), QVector3D(0, 0, 0));
@@ -251,14 +251,13 @@ void QtManager::onClick(std::string func) {
 
 Qt3DCore::QEntity* QtManager::createPointCloud() {
 
-    m_material = new Qt3DExtras::QPhongMaterial(m_rootEntity.get());
-    m_material->setAmbient(Qt::white);
+    m_material = new Qt3DExtras::QPerVertexColorMaterial(m_rootEntity.get());
 
     m_geometry = new Qt3DRender::QGeometry(m_rootEntity.get());
 
     m_vertexBuffer = new Qt3DRender::QBuffer();
 
-    m_positionAttribute = new Qt3DRender::QAttribute();
+    m_positionAttribute = new Qt3DRender::QAttribute(nullptr);
     m_positionAttribute->setName(Qt3DRender::QAttribute::defaultPositionAttributeName());
     m_positionAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
     m_positionAttribute->setVertexSize(3);
@@ -268,7 +267,7 @@ Qt3DCore::QEntity* QtManager::createPointCloud() {
     m_positionAttribute->setCount(m_config->getNVertex());
 
 
-    m_colorAttribute = new Qt3DRender::QAttribute();
+    m_colorAttribute = new Qt3DRender::QAttribute(nullptr);
     m_colorAttribute->setName(Qt3DRender::QAttribute::defaultColorAttributeName());
     m_colorAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
     m_colorAttribute->setVertexSize(3);
@@ -302,9 +301,9 @@ void QtManager::updateArray(size_t start, size_t end, algo a) {
         m_rawVertexArray[6*i+1] = m_config->getCloud()->at(i).y;
         m_rawVertexArray[6*i+2] = m_config->getCloud()->at(i).z;
         // Color (RGB normalized to 0-1 range)
-        m_rawVertexArray[6*i+3] = static_cast<float>(m_config->getCloud()->at(i).R) / 255.;
-        m_rawVertexArray[6*i+4] = static_cast<float>(m_config->getCloud()->at(i).G) / 255.;
-        m_rawVertexArray[6*i+5] = static_cast<float>(m_config->getCloud()->at(i).B) / 255.;
+        m_rawVertexArray[6*i+3] = m_config->getCloud()->at(i).R / 255.f;
+        m_rawVertexArray[6*i+4] = m_config->getCloud()->at(i).G / 255.f;
+        m_rawVertexArray[6*i+5] = m_config->getCloud()->at(i).B / 255.f;
     }
 }
 
@@ -336,7 +335,7 @@ void QtManager::updatePoints(algo a) {
             t.join();
         }
     }
-    
+
     m_config->resetCloudCordNext();
     m_vertexBuffer->setData(bufferBytes);
 }

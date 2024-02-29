@@ -10,6 +10,7 @@
 #include <Qt3DExtras/QTorusMesh>
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QSphereMesh>
+#include <Qt3DExtras/QPerVertexColorMaterial>
 
 #include <Qt3DRender/QCamera>
 #include <Qt3DRender/QRenderSurfaceSelector>
@@ -83,7 +84,7 @@ private:
     Qt3DRender::QAttribute *m_colorAttribute;
     Qt3DRender::QGeometry *m_geometry;
     Qt3DRender::QGeometryRenderer *m_geometryRenderer;
-    Qt3DExtras::QPhongMaterial *m_material;
+    Qt3DExtras::QPerVertexColorMaterial *m_material;
 
     float *m_rawVertexArray;
     float m_sphere_volume;

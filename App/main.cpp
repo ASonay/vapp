@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
 
     auto config = std::make_shared<Config>("test");
-    config->setNumberOfThreads(8);
+    config->setNumberOfThreads(32);
 
     if (!config->readFile(config->getLibDir()+"/Data/cloud.ply")) {
         std::cerr << "Can not read the file" << std::endl;
