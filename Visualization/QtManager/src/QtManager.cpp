@@ -8,7 +8,7 @@ QtManager::QtManager(QWidget *parent) :
     b_part1(true),
     b_part2(false),
     b_part3(false),
-    m_play(-1)
+    m_play(0)
 {
     m_centralWidget.reset(new QWidget(this));
 }
@@ -87,7 +87,7 @@ void QtManager::setWindow()
     m_cloudEntity.reset(createPointCloud());
 
     // Update Point Clouds
-    updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
+    updatePoints([this](const size_t& idx) -> void { return m_algoBase->base(idx); });
 
     // Set the scene root entity
     m_view->setRootEntity(m_rootEntity.get());
@@ -122,7 +122,7 @@ void QtManager::setCamera(const QVector3D &pos, const QVector3D &cent) {
 
 void QtManager::onClick(std::string func) {
 
-    if (func == "Rotate" && b_part1) {
+    if (func == "Rotate" && !m_play) {
         bool b_eta, b_beta, b_phi;
         double eta = m_inputFields["Eta"]->text().toDouble(&b_eta);
         double beta = m_inputFields["Beta"]->text().toDouble(&b_beta);
@@ -133,13 +133,13 @@ void QtManager::onClick(std::string func) {
         if (!b_phi) {phi=0.0;}
 
         if (b_eta || b_phi || b_beta) {
-            m_algoBase.setEta(eta);
-            m_algoBase.setBeta(beta);
-            m_algoBase.setPhi(phi);
-            updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.rotation(p); });
+            m_algoBase->setEta(eta);
+            m_algoBase->setBeta(beta);
+            m_algoBase->setPhi(phi);
+            updatePoints([this](const size_t& idx) -> void { return m_algoBase->rotation(idx); });
         }
      }
-    else if (func == "Translate" && b_part1) {
+    else if (func == "Translate" && !m_play) {
         bool b_x, b_y, b_z;
         double X = m_inputFields["X"]->text().toDouble(&b_x);
         double Y = m_inputFields["Y"]->text().toDouble(&b_y);
@@ -150,14 +150,14 @@ void QtManager::onClick(std::string func) {
         if (!b_z) {Z=0.0;}
 
         if (b_x || b_y || b_z) {
-            m_algoBase.setX(X);
-            m_algoBase.setY(Y);
-            m_algoBase.setZ(Z);
+            m_algoBase->setX(X);
+            m_algoBase->setY(Y);
+            m_algoBase->setZ(Z);
 
-            updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.translation(p); });
+            updatePoints([this](const size_t& idx) -> void { return m_algoBase->translation(idx); });
         }
      }
-    else if (func == "Displacement" && b_part1) {
+    else if (func == "Displacement" && !m_play) {
         bool b_x, b_y, b_z;
         double X = m_inputFields["X"]->text().toDouble(&b_x);
         double Y = m_inputFields["Y"]->text().toDouble(&b_y);
@@ -168,11 +168,11 @@ void QtManager::onClick(std::string func) {
         if (!b_z) {Z=0.0;}
 
         if (b_x || b_y || b_z) {
-            m_algoBase.setX(X);
-            m_algoBase.setY(Y);
-            m_algoBase.setZ(Z);
+            m_algoBase->setX(X);
+            m_algoBase->setY(Y);
+            m_algoBase->setZ(Z);
 
-            updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.displacement(p); });
+            updatePoints([this](const size_t& idx) -> void { return m_algoBase->displacement(idx); });
         }
      }
     else if (func == "Stop") {
@@ -189,16 +189,14 @@ void QtManager::onClick(std::string func) {
 
         if (!b_speed) {speed=0.001;}
         if (!b_gran) {gran=m_sphere_volume;}
+
+        m_config->setSpeed(speed);
+        m_config->setGran(gran);
         
         while (m_play) {
-            m_sphere_cloud = m_algoBase.sphereMove(
-                m_config->getCloud(),
-                m_sphere_cloud,
-                gran,
-                speed
-            );
-            updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
+            updatePoints([this](const size_t& idx) -> void { return m_algoBase->sphereMove(idx); });
             QCoreApplication::processEvents(); // Keep UI responsive
+            std::cout << "Process done" << std::endl;
         }
 
      }
@@ -210,17 +208,17 @@ void QtManager::onClick(std::string func) {
             std::cerr << "Successfully read file" << std::endl;
         }
         m_cloudEntity.reset(createPointCloud());
-        updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
+        updatePoints([this](const size_t& idx) -> void { return m_algoBase->base(idx); });
         setCamera(QVector3D(0, 0, -4.0), QVector3D(0, 1.2, 0));
         b_part1 = true;
         b_part2 = false;
         b_part3 = false;
      }
      else if (func == "Part 2") {
-        m_sphere_cloud = m_config->createCloud(800, m_sphere_volume);
+        m_config->createCloud(20000, m_sphere_volume, m_config->boundMin(), m_config->boundMax());
         m_cloudEntity.reset(createPointCloud());
-        updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
-        setCamera(QVector3D(0, 0.0, -5.0), QVector3D(0, 0, 0));
+        updatePoints([this](const size_t& idx) -> void { return m_algoBase->base(idx); });
+        setCamera(QVector3D(0, 0.0, m_config->boundMin() * 6.0), QVector3D(0, 0, 0));
         b_part2 = true;
         b_part1 = false;
         b_part3 = false;
@@ -240,11 +238,11 @@ void QtManager::onClick(std::string func) {
             std::cerr << "Successfully read file" << std::endl;
         }
         m_cloudEntity.reset(createPointCloud());
-        updatePoints([this](const dm::point& p) -> dm::point { return m_algoBase.base(p); });
+        updatePoints([this](const size_t& idx) -> void { return m_algoBase->base(idx); });
         setCamera(QVector3D(0, 0, -10.0), QVector3D(0, 0, 0));
-        b_part1 = true;
+        b_part3 = true;
+        b_part1 = false;
         b_part2 = false;
-        b_part3 = false;
      }
      else {
         std::cerr << "Do nothing!" << std::endl;
@@ -295,10 +293,10 @@ Qt3DCore::QEntity* QtManager::createPointCloud() {
     return entity;
 }
 
-void QtManager::updateArray(unsigned start, unsigned end, algo a) {
+void QtManager::updateArray(size_t start, size_t end, algo a) {
 
-    for (unsigned i = start; i < end; ++i) {
-        m_config->getCloud()->at(i) = a(m_config->getCloud()->at(i));
+    for (size_t i = start; i < end; ++i) {
+        a(i);
         // Position
         m_rawVertexArray[6*i+0] = m_config->getCloud()->at(i).x;
         m_rawVertexArray[6*i+1] = m_config->getCloud()->at(i).y;
@@ -317,14 +315,14 @@ void QtManager::updatePoints(algo a) {
 
     m_rawVertexArray = reinterpret_cast<float *>(bufferBytes.data());
 
-    unsigned numberOfThreads = m_config->numberOfThreads(); 
-    unsigned size = m_config->getNVertex();
-    unsigned segmentSize = size / numberOfThreads;
+    size_t numberOfThreads = m_config->numberOfThreads(); 
+    size_t size = m_config->getNVertex();
+    size_t segmentSize = size / numberOfThreads;
     std::vector<std::thread> threads;
 
-    for (unsigned i = 0; i < numberOfThreads; ++i) {
-        unsigned start = i * segmentSize;
-        unsigned end = (i + 1) * segmentSize;
+    for (size_t i = 0; i < numberOfThreads; ++i) {
+        size_t start = i * segmentSize;
+        size_t end = (i + 1) * segmentSize;
         if (i == numberOfThreads - 1) {
             end = size; // Ensure the last thread covers the remainder.
         }
@@ -338,6 +336,7 @@ void QtManager::updatePoints(algo a) {
             t.join();
         }
     }
-
+    
+    m_config->resetCloudCordNext();
     m_vertexBuffer->setData(bufferBytes);
 }

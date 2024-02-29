@@ -5,28 +5,24 @@
 #include <unordered_map>
 
 #include "Cloud.h"
+#include "Config.h"
 
-using algo = std::function<dm::point(const dm::point &)>;
+using algo = std::function<void(const size_t &)>;
 
 namespace fun {
     class AlgoBase {
     public:
-        AlgoBase();
+        AlgoBase(const std::shared_ptr<Config> &config);
 
-        dm::point base(const dm::point &x);
+        void base(const size_t &idx);
 
-        dm::point rotation(const dm::point &x);
+        void rotation(const size_t &idx);
 
-        dm::point translation(const dm::point &x);
+        void translation(const size_t &idx);
 
-        dm::point displacement(const dm::point &x);
+        void displacement(const size_t &idx);
 
-        std::unordered_map<std::string, unsigned> sphereMove(
-            dm::cloud * c, 
-            const std::unordered_map<std::string, unsigned> &umap,
-            float sphere_volume,
-            float speed
-        );
+        void sphereMove(const size_t &idx);
 
         // Define constant variables
 
@@ -45,6 +41,9 @@ namespace fun {
         float m_eta;
         float m_beta;
         float m_phi;
+
+        std::shared_ptr<Config> m_config;
+
     };
 }
 

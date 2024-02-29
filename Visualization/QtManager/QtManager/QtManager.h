@@ -58,7 +58,7 @@ public:
 
     void setConfig(const std::shared_ptr<Config> &config) {
         m_config = config;
-        m_cloud = std::make_unique<dm::cloud>(*config->getCloud());
+        m_algoBase.reset(new fun::AlgoBase(config));
     }
 
     void setWindow();
@@ -72,6 +72,8 @@ private:
     std::unique_ptr<Qt3DExtras::Qt3DWindow> m_view;
     std::unique_ptr<Qt3DCore::QEntity> m_rootEntity;
     std::unique_ptr<Qt3DCore::QEntity> m_cloudEntity;
+
+    std::unique_ptr<fun::AlgoBase> m_algoBase;
 
     std::unordered_map<std::string, std::unique_ptr<QPushButton>> m_buttons;
     std::unordered_map<std::string, std::unique_ptr<QLineEdit>> m_inputFields;
@@ -88,17 +90,11 @@ private:
 
     std::shared_ptr<Config> m_config;
 
-    std::unique_ptr<dm::cloud> m_cloud;
-
-    std::unordered_map<std::string, unsigned> m_sphere_cloud;
-
     Qt3DCore::QEntity* createPointCloud();
     void updatePoints(algo a);
-    void updateArray(unsigned start, unsigned end, algo a);
+    void updateArray(size_t start, size_t end, algo a);
 
     void setCamera(const QVector3D &pos, const QVector3D &cent);
-
-    fun::AlgoBase m_algoBase;
 
     bool b_part1;
     bool b_part2;

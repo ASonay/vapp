@@ -51,8 +51,7 @@ bool Cloud::readFile(const std::string &fileName, unsigned int size, std::string
     }
 
     // Read vertex data
-    m_cloud.reset(new dm::cloud(vertexCount));
-    m_vertex = vertexCount;
+    resetCloud(vertexCount);
 
     for (size_t i = 0; i < vertexCount; ++i) {
         if (cord_type == "double") {
@@ -77,33 +76,31 @@ bool Cloud::readFile(const std::string &fileName, unsigned int size, std::string
     return true;
 }
 
-std::unordered_map<std::string, unsigned> Cloud::createCloud(size_t nPoint, float sphere_volume) {
+void Cloud::createCloud(
+    const size_t &nPoint, 
+    const float &sphere_volume, 
+    const float &boundMin, 
+    const float &boundMax
+) {
     resetCloud(nPoint);
 
-    std::unordered_map<std::string, unsigned> umap;
-
     unsigned count = 0;
-    while (umap.size() < nPoint) {
-        size_t csize = umap.size();
+    while (m_cloudCord->size() < nPoint) {
+        size_t csize = m_cloudCord->size();
 
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<> distr(-1.0f, 1.0f);
+        std::uniform_real_distribution<> distr(boundMin, boundMax);
 
         float x = static_cast<float>(distr(gen));
         float y = static_cast<float>(distr(gen));
-        // We want 2D surface
-        float z = 0;
+        float z = static_cast<float>(distr(gen));
 
-        int g_x = static_cast<int>((x / sphere_volume) * 10) / 10;
-        int g_y = static_cast<int>((y / sphere_volume) * 10) / 10;
-        int g_z = 0;
+        std::string key = getCoord(x, y, z, sphere_volume);
 
-        std::string key = std::to_string(g_x) + std::to_string(g_y) + std::to_string(g_z);
+        m_cloudCord->insert({key, count});
 
-        umap[key] = count;
-
-        if (umap.size() > csize) {
+        if (m_cloudCord->size() > csize) {
             m_cloud->at(count++) = {
                 .x = x,
                 .y = y,
@@ -113,10 +110,34 @@ std::unordered_map<std::string, unsigned> Cloud::createCloud(size_t nPoint, floa
                 .B = 0,
                 .vx = static_cast<float>(distr(gen)),
                 .vy = static_cast<float>(distr(gen)),
-                .vz = 0.0
+                .vz = static_cast<float>(distr(gen))
             };
         }
     }
 
-    return umap;
+}
+
+std::string Cloud::getCoord(const float &x, const float &y, const float &z, const float &sphere_volume) {
+    int g_x = static_cast<int>((x / sphere_volume) * 10) / 10;
+    int g_y = static_cast<int>((y / sphere_volume) * 10) / 10;
+    int g_z = static_cast<int>((z / sphere_volume) * 10) / 10;
+
+    return std::to_string(g_x) + std::to_string(g_y) + std::to_string(g_z);
+}
+
+unsigned Cloud::findCloudCord(const std::string &key) {
+    auto search = m_cloudCord->find(key);
+
+    if (search != m_cloudCord->end()) {
+        return search->second;
+    }
+    else {
+        return 0;
+    }
+}
+
+void Cloud::resetCloudCordNext() {
+    m_cloudCord->clear();
+    m_cloudCord->reserve(m_cloudCordNext->size());
+    m_cloudCord->insert(m_cloudCordNext->begin(), m_cloudCordNext->end());
 }

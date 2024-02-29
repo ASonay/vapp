@@ -6,7 +6,7 @@ add_library(AlgoBase SHARED
 )
 
 # Linked libraries
-target_link_libraries(AlgoBase DataLoader)
+target_link_libraries(AlgoBase DataLoader Config)
 
 # Specify include directories
 target_include_directories(AlgoBase PUBLIC

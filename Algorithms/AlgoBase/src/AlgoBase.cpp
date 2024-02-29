@@ -2,26 +2,24 @@
 
 #include "AlgoBase.h"
 
-fun::AlgoBase::AlgoBase() :
+fun::AlgoBase::AlgoBase(const std::shared_ptr<Config> &config) :
     m_x(0.0),
     m_y(0.0),
     m_z(0.0),
     m_eta(0.0),
     m_phi(0.0)
 {
-
+    m_config = config;
 }
 
-dm::point fun::AlgoBase::base(const dm::point &x){
-    return x;
+void fun::AlgoBase::base(const size_t &idx){
+    dm::point &p = m_config->getCloud()->at(idx);
+
+    m_config->setCloudCordNext(m_config->getCoord(p.x, p.y, p.z, m_config->gran()), idx);
 }
 
-dm::point fun::AlgoBase::rotation(const dm::point &x){
-    dm::point p;
-
-    p.R = x.R;
-    p.G = x.G;
-    p.B = x.B;
+void fun::AlgoBase::rotation(const size_t &idx){
+    dm::point &p = m_config->getCloud()->at(idx);
 
     // Convert angles from degrees to radians
     float etaRad = m_eta * M_PI / 180.0;
@@ -29,12 +27,14 @@ dm::point fun::AlgoBase::rotation(const dm::point &x){
     float phiRad = m_phi * M_PI / 180.0;
 
     // Rotation around the x-axis
-    p.y = x.y * cos(etaRad) - x.z * sin(etaRad);
-    p.z = x.y * sin(etaRad) + x.z * cos(etaRad);
+    float yRotx = p.y * cos(etaRad) - p.z * sin(etaRad);
+    float zRotx = p.y * sin(etaRad) + p.z * cos(etaRad);
+    p.y = yRotx;
+    p.z = zRotx;
 
     // Rotation around the Y-axis
-    float xRoty = x.x * cos(betaRad) + p.z * sin(betaRad);
-    float zRoty = -x.x * sin(betaRad) + p.z * cos(betaRad);
+    float xRoty = p.x * cos(betaRad) + p.z * sin(betaRad);
+    float zRoty = -p.x * sin(betaRad) + p.z * cos(betaRad);
     p.x = xRoty;
     p.z = zRoty;
 
@@ -44,97 +44,71 @@ dm::point fun::AlgoBase::rotation(const dm::point &x){
     p.x = xRotz;
     p.y = yRotz;
 
-    return p;
+    m_config->setCloudCordNext(m_config->getCoord(p.x, p.y, p.z, m_config->gran()), idx);
 }
 
-dm::point fun::AlgoBase::translation(const dm::point &x){
-    dm::point p;
+void fun::AlgoBase::translation(const size_t &idx){
+    dm::point &p = m_config->getCloud()->at(idx);
 
-    p.R = x.R;
-    p.G = x.G;
-    p.B = x.B;
+    p.x += m_x;
+    p.y += m_y;
+    p.z += m_z;
 
-    p.x = x.x + m_x;
-    p.y = x.y + m_y;
-    p.z = x.z + m_z;
-
-    return p;
+    m_config->setCloudCordNext(m_config->getCoord(p.x, p.y, p.z, m_config->gran()), idx);
 }
 
-dm::point fun::AlgoBase::displacement(const dm::point &x){
-    dm::point p;
+void fun::AlgoBase::displacement(const size_t &idx){
+    dm::point &p = m_config->getCloud()->at(idx);
 
-    p.R = x.R;
-    p.G = x.G;
-    p.B = x.B;
+    p.x *= 1.0 / (1.0 - m_x);
+    p.y *= 1.0 / (1.0 - m_y);
+    p.z *= 1.0 / (1.0 - m_z);
 
-    p.x = x.x * 1.0 / (1.0 - m_x);
-    p.y = x.y * 1.0 / (1.0 - m_y);
-    p.z = x.z * 1.0 / (1.0 - m_z);
-
-    return p;
+    m_config->setCloudCordNext(m_config->getCoord(p.x, p.y, p.z, m_config->gran()), idx);
 }
 
-std::unordered_map<std::string, unsigned> fun::AlgoBase::sphereMove(
-    dm::cloud * c, 
-    const std::unordered_map<std::string, unsigned> &umap,
-    float sphere_volume,
-    float speed
-) {
-    std::unordered_map<std::string, unsigned> umap_tmp;
+void fun::AlgoBase::sphereMove(const size_t &idx) {
 
-    for (unsigned i=0; i<800; ++i) {
+    float x = m_config->getCloud()->at(idx).x + m_config->speed() * m_config->getCloud()->at(idx).vx;
+    float y = m_config->getCloud()->at(idx).y + m_config->speed() * m_config->getCloud()->at(idx).vy;
+    float z = m_config->getCloud()->at(idx).z + m_config->speed() * m_config->getCloud()->at(idx).vz;
 
-        float x = c->at(i).x + speed * c->at(i).vx;
-        float y = c->at(i).y + speed * c->at(i).vy;
-        float z = c->at(i).z + speed * c->at(i).vz;
+    std::string key = m_config->getCoord(x, y, z, m_config->gran());
 
-        int g_x = static_cast<int>((x / sphere_volume) * 10) / 10;
-        int g_y = static_cast<int>((y / sphere_volume) * 10) / 10;
-        int g_z = 0;
+    unsigned loc = m_config->findCloudCord(key);
 
-        std::string key = std::to_string(g_x) + std::to_string(g_y) + std::to_string(g_z);
-        auto search = umap.find(key);
+    if (loc && loc != idx) {
+        float vx = m_config->getCloud()->at(loc).vx;
+        float vy = m_config->getCloud()->at(loc).vy;
+        float vz = m_config->getCloud()->at(loc).vz;
 
-        if (search != umap.end()) {
-            unsigned loc = search->second;
+        m_config->getCloud()->at(loc).vx = (-1.0 * m_config->getCloud()->at(loc).vx + m_config->getCloud()->at(idx).vx) * 0.5;
+        m_config->getCloud()->at(loc).vy = (-1.0 * m_config->getCloud()->at(loc).vy + m_config->getCloud()->at(idx).vy) * 0.5;
+        m_config->getCloud()->at(loc).vz = (-1.0 * m_config->getCloud()->at(loc).vz + m_config->getCloud()->at(idx).vz) * 0.5;
 
-            if (loc != i) {
-                float vx = c->at(loc).vx;
-                float vy = c->at(loc).vy;
-                float vz = c->at(loc).vz;
+        m_config->getCloud()->at(idx).vx = (-1.0 * m_config->getCloud()->at(idx).vx + vx) * 0.5;
+        m_config->getCloud()->at(idx).vy = (-1.0 * m_config->getCloud()->at(idx).vy + vy) * 0.5;
+        m_config->getCloud()->at(idx).vz = (-1.0 * m_config->getCloud()->at(idx).vz + vz) * 0.5;
 
-                c->at(loc).vx = (-1.0 * c->at(loc).vx + c->at(i).vx) * 0.5;
-                c->at(loc).vy = (-1.0 * c->at(loc).vy + c->at(i).vy) * 0.5;
-                c->at(loc).vz = (-1.0 * c->at(loc).vz + c->at(i).vz) * 0.5;
+        x = m_config->getCloud()->at(idx).x + m_config->speed() * m_config->getCloud()->at(idx).vx;
+        y = m_config->getCloud()->at(idx).y + m_config->speed() * m_config->getCloud()->at(idx).vy;
+        z = m_config->getCloud()->at(idx).z + m_config->speed() * m_config->getCloud()->at(idx).vz;
 
-                c->at(i).vx = (-1.0 * c->at(i).vx + vx) * 0.5;
-                c->at(i).vy = (-1.0 * c->at(i).vy + vy) * 0.5;
-                c->at(i).vz = (-1.0 * c->at(i).vz + vz) * 0.5;
+        key = m_config->getCoord(x, y, z, m_config->gran());
 
-                x = c->at(i).x + speed * c->at(i).vx;
-                y = c->at(i).y + speed * c->at(i).vy;
-                z = c->at(i).z + speed * c->at(i).vz;
-
-                g_x = static_cast<int>((x / sphere_volume) * 10) / 10;
-                g_y = static_cast<int>((y / sphere_volume) * 10) / 10;
-                g_z = 0;
-
-                key = std::to_string(g_x) + std::to_string(g_y) + std::to_string(g_z);
-                std::cout << "Collision for " << i << " x " << loc << " " << key << " " << &c->at(loc) << " " << &c->at(i) << std::endl;
-            }
-        }
-
-        c->at(i).x = x;
-        c->at(i).y = y;
-        c->at(i).z = z;
-
-        if (x > 1 - speed || x < - 1 + speed) {c->at(i).vx *= -1;}
-        if (y > 1 - speed || y < - 1 + speed) {c->at(i).vy *= -1;}
-        if (z > 1 - speed || z < - 1 + speed) {c->at(i).vz *= -1;}
-
-        umap_tmp[key] = i;
+        std::cout << "Collision for " << idx << " x " << loc << " " << key << " " << &m_config->getCloud()->at(loc) << " " << &m_config->getCloud()->at(idx) << std::endl;
     }
 
-    return umap_tmp;
+    m_config->getCloud()->at(idx).x = x;
+    m_config->getCloud()->at(idx).y = y;
+    m_config->getCloud()->at(idx).z = z;
+
+    if (x > m_config->boundMax() - m_config->speed() || x < m_config->boundMin() + m_config->speed()) 
+        {m_config->getCloud()->at(idx).vx *= -1;}
+    if (y > m_config->boundMax() - m_config->speed() || y < m_config->boundMin() + m_config->speed()) 
+        {m_config->getCloud()->at(idx).vy *= -1;}
+    if (z > m_config->boundMax() - m_config->speed() || z < m_config->boundMin() + m_config->speed()) 
+        {m_config->getCloud()->at(idx).vz *= -1;}
+
+    m_config->setCloudCordNext(key, idx);
 }

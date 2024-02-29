@@ -32,7 +32,7 @@ public:
     ~Cloud();
     
     bool readFile(
-        const std::string &fileName, 
+        const std::string &fileName,
         unsigned int = 3 * sizeof(float) + 3 * sizeof(unsigned char),
         std::string cord_type = "float"
     );
@@ -41,12 +41,28 @@ public:
 
     void resetCloud(size_t nVertex) {
         m_cloud.reset(new dm::cloud(nVertex));
+        m_cloudCordNext.reset(new std::vector<std::pair<std::string, unsigned>>(nVertex));
+        m_cloudCord.reset(new std::unordered_map<std::string, unsigned>(nVertex));
         m_vertex = nVertex;
     }
 
     size_t getNVertex() {return m_vertex;}
 
-    std::unordered_map<std::string, unsigned> createCloud(size_t nPoint, float sphere_volume);
+    void createCloud(
+        const size_t &nPoint, 
+        const float &sphere_volume, 
+        const float &boundMin, 
+        const float &boundMax
+    );
+
+    void setCloudCordNext(std::string key, unsigned idx) {
+        m_cloudCordNext->at(idx) = std::make_pair(key, idx);
+    }
+
+    unsigned findCloudCord(const std::string &key);
+    void resetCloudCordNext();
+
+    std::string getCoord(const float &x, const float &y, const float &z, const float &sphere_volume);
 
 private:
 
@@ -54,6 +70,9 @@ private:
 
     std::string m_name;
     size_t m_vertex;
+
+    std::unique_ptr<std::unordered_map<std::string, unsigned>> m_cloudCord;
+    std::unique_ptr<std::vector<std::pair<std::string, unsigned>>> m_cloudCordNext;
 
 };
 
